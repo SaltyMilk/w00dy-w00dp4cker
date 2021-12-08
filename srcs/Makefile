@@ -10,7 +10,7 @@
 #                                                                              #
 # **************************************************************************** #
 
-SRC = woody.c utils.c
+SRC = woody.c utils.c elf64.c
 CC = gcc
 CFLAGS = -c -Wall -Wextra -Werror
 OBJ = $(SRC:.c=.o)
@@ -29,7 +29,7 @@ $(NAME) : $(OBJ)
 clean : 
 	rm -f $(OBJ) libft/*.o
 fclean :
-	rm -f $(OBJ) $(NAME) libft/libft.a libft/*o
+	rm -f $(OBJ) $(NAME) woody libft/libft.a libft/*o
 
 re : fclean all
 

@@ -1,15 +1,15 @@
 #include "woody.h"
 
-void	*open_file(char **argv, int file_n, unsigned int *fsize)
+void	*open_file(char **argv, unsigned int *fsize)
 {
 	int			fd;
 	void		*f;
 	off_t		start;
 	off_t		size;
 
-	if ((fd = open(argv[file_n], O_RDONLY)) < 0)
+	if ((fd = open(argv[1], O_RDONLY)) < 0)
 	{
-		ft_printf("nm: '%s': No such file\n", argv[file_n]);
+		ft_printf("nm: '%s': No such file\n", argv[1]);
 		return (NULL);
 	}
 	start = lseek(fd, (size_t)0, SEEK_CUR);
@@ -41,10 +41,21 @@ int parse_magic(t_elf_file ef)
 	else if (ef.elf32header.e_ident[EI_CLASS] == ELFCLASS64)
 	{
 		ft_memcpy(&ef.elf64header, ef.file, sizeof(Elf64_Ehdr));
-//		if (parse64elf(ef))
-		//	ft_printf("woody_woodpacker: File corrupted\n");
+		if (parse64elf(ef))
+			ft_printf("woody_woodpacker: File corrupted\n");
 	}
 	return (0);
+}
+
+int open_wfile()
+{
+	int fd;
+
+	if ((fd = open("woody", O_RDWR | O_CREAT | O_TRUNC, S_IRWXO | S_IRWXU | S_IRWXG)) < 0)
+	{
+		printf("woody_woodpacker: could not create new binary\n");
+	}
+	return (fd);
 }
 
 int ft_woody(void *file, char *fname, unsigned int fsize)
@@ -53,7 +64,8 @@ int ft_woody(void *file, char *fname, unsigned int fsize)
 	ef.fname = fname;
 	ef.file = file;
 	ef.fsize = fsize;
-	(void) ef;
+	if ((ef.wfd = open_wfile()) < 0)
+		return (1);
 	if (parse_magic(ef))
 		return (1);	
 	return (0);
@@ -63,7 +75,6 @@ int ft_woody(void *file, char *fname, unsigned int fsize)
 int		main(int argc, char **argv)
 {
 	void			*file;
-	int				argn;
 	unsigned int	fsize;
 
 	char **arg_cpy;
@@ -89,17 +100,13 @@ int		main(int argc, char **argv)
 		arg_cpy[2] = NULL;
 		argc = 2;
 	}
-	argn = 1;
-	while (argn < argc)
+	if (argc == 2)
 	{
-		if ((file = open_file(arg_cpy, argn, &fsize)))
+		if ((file = open_file(arg_cpy, &fsize)))
 		{
-			if (argc > 2)
-				ft_printf("\n%s:\n", argv[argn]);
-			if (ft_woody(file, arg_cpy[argn], fsize))
+			if (ft_woody(file, arg_cpy[1], fsize))
 				return (1);
 		}
-		argn++;
 	}
 	free_sp(arg_cpy);
 	return (0);
