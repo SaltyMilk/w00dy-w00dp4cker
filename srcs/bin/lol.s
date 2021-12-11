@@ -1,15 +1,20 @@
     global _start   ; Make label available to linker 
 
+label:
+	mov rax, 2
+	ret
+
 _start:             ; Standard ld entry point    
+
     jmp callback    ; Jump to the end to get our current address
 
 dowork:
     pop     rsi     ;
-    mov rax,1       ; System call number for write
+    mov 	rax,1       ; System call number for write
     mov     rdi,1   ; 1 for stdout
     mov     rdx,12  ; length of Hello World
     syscall         ; Switch to the kernel mode
-	call $+0xffffffffffffd004
+	call label
 
     mov   rax,231   ; exit_group(0)
     xor rdi,rdi     ;

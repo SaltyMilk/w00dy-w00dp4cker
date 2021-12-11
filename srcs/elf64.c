@@ -1,9 +1,12 @@
 #include "woody.h"
 
-#define SHELLCODE_LEN 47
+#define SHELLCODE_LEN 47+5
 
-unsigned char shellcode[SHELLCODE_LEN] = "\xeb\x1c\x5e\xb8\x01\x00\x00\x00\xbf\x01\x00\x00\x00\xba\x0c\x00\x00\x00\x0f\x05\xb8\xe7\x00\x00\x00\x48\x31\xff\x0f\x05\xe8\xdf\xff\xff\xff\x2e\x2e\x2e\x57\x4f\x4f\x44\x59\x2e\x2e\x2e\xa";
+unsigned char shellcode[SHELLCODE_LEN] = "\xeb\x21\x5e\xb8\x01\x00\x00\x00\xbf\x01\x00\x00\x00\xba\x0c\x00\x00\x00\x0f\x05\xE8\xFF\xCF\xFF\xFF\xb8\xe7\x00\x00\x00\x48\x31\xff\x0f\x05\xe8\xda\xff\xff\xff\x2e\x2e\x2e\x57\x4f\x4f\x44\x59\x2e\x2e\x2e\x0a";
 unsigned int pad = 0;
+unsigned long jmp_addr = 0;
+unsigned long old_entry = 0;
+unsigned long new_entry = 0;
 
 Elf64_Addr new_entryaddr(t_elf_file ef)
 {
@@ -59,9 +62,10 @@ int parse64elfheader(t_elf_file ef)
 	new_header.e_shnum = 0;
 	new_header.e_shentsize = 0;
 	new_header.e_shoff = 0;
-
+	old_entry = new_header.e_entry;
 	if (!(new_header.e_entry = new_entryaddr(ef)))
 		return (1);
+	new_entry = new_header.e_entry;
 	write(ef.wfd, &new_header, sizeof(Elf64_Ehdr));
 	return (0);
 }
@@ -124,6 +128,7 @@ int parse64elf(t_elf_file ef)
 		return (1);
 	parse64elfph(ef);
 	parse64elfsec(ef);
+	printf("rel=%lx\n", -(new_entry + 20 - old_entry));
 //	lulz(ef);
 	return (0);
 }
