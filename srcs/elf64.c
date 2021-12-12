@@ -1,8 +1,8 @@
 #include "woody.h"
 
-#define SHELLCODE_LEN 47+5
+#define SHELLCODE_LEN 51 + 5 +2
 
-unsigned char shellcode[SHELLCODE_LEN] = "\xeb\x21\x5e\xb8\x01\x00\x00\x00\xbf\x01\x00\x00\x00\xba\x0c\x00\x00\x00\x0f\x05\xE8\xFF\xCF\xFF\xFF\xb8\xe7\x00\x00\x00\x48\x31\xff\x0f\x05\xe8\xda\xff\xff\xff\x2e\x2e\x2e\x57\x4f\x4f\x44\x59\x2e\x2e\x2e\x0a";
+unsigned char shellcode[SHELLCODE_LEN] = "\xb8\x01\x00\x00\x00\xbf\x01\x00\x00\x00\x52\x68\x2e\x2e\x2e\x0a\x48\xba\x2e\x2e\x2e\x57\x4f\x4f\x44\x59\x52\x48\x8d\x34\x24\xba\x0c\x00\x00\x00\x0f\x05\x58\x58\x5a\xE8\xEA\xCF\xFF\xFF\xb8\x3c\x00\x00\x00\xbf\x00\x00\x00\x00\x0f\x05";
 unsigned int pad = 0;
 unsigned long jmp_addr = 0;
 unsigned long old_entry = 0;
@@ -59,9 +59,10 @@ int parse64elfheader(t_elf_file ef)
 	Elf64_Ehdr new_header;
 
 	ft_memcpy(&new_header, &ef.elf64header, sizeof(Elf64_Ehdr));
-	new_header.e_shnum = 0;
-	new_header.e_shentsize = 0;
-	new_header.e_shoff = 0;
+//	new_header.e_shnum = 0;
+//	new_header.e_shentsize = 0;
+//	new_header.e_shoff = 0;
+	new_header.e_shoff = new_header.e_shoff + SHELLCODE_LEN + 8;
 	old_entry = new_header.e_entry;
 	if (!(new_header.e_entry = new_entryaddr(ef)))
 		return (1);
@@ -96,15 +97,17 @@ int parse64elfph(t_elf_file ef)
 	return (0);
 }
 
+	//write(ef.wfd, (unsigned char *)ef.file + start, new_sect - start);
 int parse64elfsec(t_elf_file ef)
 {
 	Elf64_Addr new_sect = get_bssoff(ef);
 
-	unsigned long start =  ef.elf64header.e_phoff + sizeof(Elf64_Phdr) * ef.elf64header.e_phnum; 
-	write(ef.wfd, (unsigned char *)ef.file + start, new_sect - start);
+	unsigned long start =  ef.elf64header.e_phoff + (sizeof(Elf64_Phdr) * ef.elf64header.e_phnum); 
+	write(ef.wfd, (unsigned char *)ef.file + start, (new_sect - start));
 	for (unsigned int i = 0; i < pad; i++)
 		write(ef.wfd, "\x00", 1);
 	write(ef.wfd, shellcode, SHELLCODE_LEN);
+	write(ef.wfd, (unsigned char *)ef.file + new_sect, ef.fsize - new_sect);
 	return (0);	
 }
 
@@ -128,7 +131,7 @@ int parse64elf(t_elf_file ef)
 		return (1);
 	parse64elfph(ef);
 	parse64elfsec(ef);
-	printf("rel=%lx\n", -(new_entry + 20 - old_entry));
-//	lulz(ef);
+	printf("rel=%lx\n", -(new_entry + 37 - old_entry));
+	//lulz(ef);
 	return (0);
 }
