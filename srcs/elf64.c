@@ -1,7 +1,7 @@
 #include "woody.h"
 
 #define SHELLCODE_LEN 51 + 5 +2
-
+#define JMP_INDEX 42
 unsigned char shellcode[SHELLCODE_LEN] = "\xb8\x01\x00\x00\x00\xbf\x01\x00\x00\x00\x52\x68\x2e\x2e\x2e\x0a\x48\xba\x2e\x2e\x2e\x57\x4f\x4f\x44\x59\x52\x48\x8d\x34\x24\xba\x0c\x00\x00\x00\x0f\x05\x58\x58\x5a\xE8\xEA\xCF\xFF\xFF\xb8\x3c\x00\x00\x00\xbf\x00\x00\x00\x00\x0f\x05";
 unsigned int pad = 0;
 unsigned long jmp_addr = 0;
@@ -31,7 +31,8 @@ Elf64_Addr new_entryaddr(t_elf_file ef)
 	return (0);
 }
 
-Elf64_Addr get_bssoff(t_elf_file ef)
+
+Elf64_Addr get_secoff(t_elf_file ef, char *secname)
 {
 	unsigned long n_sec = ef.elf64header.e_shnum;
 	unsigned char *ptr = (unsigned char *)ef.file + ef.elf64header.e_shoff;
@@ -48,7 +49,7 @@ Elf64_Addr get_bssoff(t_elf_file ef)
 		if ((strtab.sh_offset + sect_headers[i].sh_name) > ef.fsize)//boundary check
 			return (0);
 		char *name =(char*)ef.file + strtab.sh_offset + sect_headers[i].sh_name; 
-		if (!ft_strncmp(name, ".bss", ft_strlen(name) + 1))
+		if (!ft_strncmp(name, secname, ft_strlen(name) + 1))
 			return (sect_headers[i].sh_offset);
 	}
 	return (0);
@@ -97,15 +98,31 @@ int parse64elfph(t_elf_file ef)
 	return (0);
 }
 
-	//write(ef.wfd, (unsigned char *)ef.file + start, new_sect - start);
+void update_jmp_addr()
+{
+	long rel_jmp = 0;
+	rel_jmp = -(new_entry + 37 - old_entry); //37 is the position of the jmp (e9) in shellcode 
+	char *s = (char *)&rel_jmp;
+	int j = JMP_INDEX;
+	for(int i = 0; i < 4; i++)
+	{
+		char c = (char)s[i];
+		if (i == 0)
+			c -= 5;
+		shellcode[j] = c;
+		j++;
+	}
+}
+
 int parse64elfsec(t_elf_file ef)
 {
-	Elf64_Addr new_sect = get_bssoff(ef);
+	Elf64_Addr new_sect = get_secoff(ef, ".bss");
 
 	unsigned long start =  ef.elf64header.e_phoff + (sizeof(Elf64_Phdr) * ef.elf64header.e_phnum); 
 	write(ef.wfd, (unsigned char *)ef.file + start, (new_sect - start));
 	for (unsigned int i = 0; i < pad; i++)
 		write(ef.wfd, "\x00", 1);
+	update_jmp_addr();	
 	write(ef.wfd, shellcode, SHELLCODE_LEN);
 	write(ef.wfd, (unsigned char *)ef.file + new_sect, ef.fsize - new_sect);
 	return (0);	
@@ -131,7 +148,6 @@ int parse64elf(t_elf_file ef)
 		return (1);
 	parse64elfph(ef);
 	parse64elfsec(ef);
-	printf("rel=%lx\n", -(new_entry + 37 - old_entry));
 	//lulz(ef);
 	return (0);
 }
