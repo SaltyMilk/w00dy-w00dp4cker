@@ -32,27 +32,28 @@ Elf64_Addr new_entryaddr(t_elf_file ef)
 }
 
 
-Elf64_Addr get_secoff(t_elf_file ef, char *secname)
+Elf64_Shdr get_section(t_elf_file ef, char *secname)
 {
 	unsigned long n_sec = ef.elf64header.e_shnum;
 	unsigned char *ptr = (unsigned char *)ef.file + ef.elf64header.e_shoff;
 	Elf64_Shdr sect_headers[n_sec];
 	Elf64_Shdr strtab;
+	Elf64_Shdr def = {0};
 
 	if ((ef.elf64header.e_shoff+ (sizeof(Elf64_Shdr) * n_sec)) > ef.fsize)//boundary check
-		return (0);
+		return (def);
 	for (unsigned long i = 0; i < n_sec; i++) // Parse section headers
 		ft_memcpy(&sect_headers[i], ptr + (sizeof(Elf64_Shdr) * i), sizeof(Elf64_Shdr)); 
 	strtab = sect_headers[ef.elf64header.e_shstrndx];
 	for (unsigned long i = 0; i < n_sec; i++)
 	{
 		if ((strtab.sh_offset + sect_headers[i].sh_name) > ef.fsize)//boundary check
-			return (0);
+			return (def);
 		char *name =(char*)ef.file + strtab.sh_offset + sect_headers[i].sh_name; 
 		if (!ft_strncmp(name, secname, ft_strlen(name) + 1))
-			return (sect_headers[i].sh_offset);
+			return (sect_headers[i]);
 	}
-	return (0);
+	return (def);
 }
 
 int parse64elfheader(t_elf_file ef)
@@ -116,30 +117,21 @@ void update_jmp_addr()
 
 int parse64elfsec(t_elf_file ef)
 {
-	Elf64_Addr new_sect = get_secoff(ef, ".bss");
-
+	Elf64_Off new_sect = get_section(ef, ".bss").sh_offset;
+	Elf64_Shdr text_sec = get_section(ef, ".text");
 	unsigned long start =  ef.elf64header.e_phoff + (sizeof(Elf64_Phdr) * ef.elf64header.e_phnum); 
-	write(ef.wfd, (unsigned char *)ef.file + start, (new_sect - start));
+	unsigned long new_start;
+	
+	write(ef.wfd, (unsigned char *)ef.file + start, (text_sec.sh_offset - start)); //writing from PH till start of .text
+	write(ef.wfd, (unsigned char *)ef.file + text_sec.sh_offset, text_sec.sh_size); // writing .text section
+	new_start = start + (text_sec.sh_offset - start) + text_sec.sh_size;
+	write(ef.wfd, (unsigned char *)ef.file + new_start, (new_sect - new_start));// writing stuff between .text and .bss
 	for (unsigned int i = 0; i < pad; i++)
-		write(ef.wfd, "\x00", 1);
-	update_jmp_addr();	
-	write(ef.wfd, shellcode, SHELLCODE_LEN);
-	write(ef.wfd, (unsigned char *)ef.file + new_sect, ef.fsize - new_sect);
+		write(ef.wfd, "\x00", 1); // padding 00 for what were previously "virtual memory"
+	update_jmp_addr();
+	write(ef.wfd, shellcode, SHELLCODE_LEN); // injecting our shellcode
+	write(ef.wfd, (unsigned char *)ef.file + new_sect, ef.fsize - new_sect); // remove for binary compression, it just adds the shdrs 
 	return (0);	
-}
-
-void lulz(t_elf_file ef)
-{
-	Elf64_Shdr shdr;
-	unsigned char *ptr = (unsigned char *)ef.file  + ef.elf64header.e_shoff;
-	unsigned int i = 0;
-	while (i < ef.elf64header.e_shnum)
-	{
-		ft_memcpy(&shdr, ptr, sizeof(Elf64_Shdr));
-		ptr += sizeof(Elf64_Shdr);
-		write(ef.wfd, &shdr, sizeof(Elf64_Shdr));
-		i++;
-	}
 }
 
 int parse64elf(t_elf_file ef)
@@ -148,6 +140,5 @@ int parse64elf(t_elf_file ef)
 		return (1);
 	parse64elfph(ef);
 	parse64elfsec(ef);
-	//lulz(ef);
 	return (0);
 }

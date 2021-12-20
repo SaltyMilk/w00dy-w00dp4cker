@@ -30,5 +30,6 @@ void free_sp(char **sp);
 char **copy_sp(char **sp);
 unsigned int smallest_len(char *s1, char *s2);
 int str_is_nullterm(t_elf_file ef, unsigned int offset);
+extern void _encrypt(char *s, char *key);
 
 #endif

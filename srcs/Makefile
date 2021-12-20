@@ -13,7 +13,7 @@
 SRC = woody.c utils.c elf64.c
 CC = gcc
 CFLAGS = -c -Wall -Wextra -Werror
-OBJ = $(SRC:.c=.o)
+OBJ = $(SRC:.c=.o) encryption/encrypt.o
 
 NAME = woody_woodpacker
 
