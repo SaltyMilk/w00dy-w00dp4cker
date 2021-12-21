@@ -2,6 +2,8 @@
 
 #define SHELLCODE_LEN 51 + 5 +2
 #define JMP_INDEX 42
+#define KEY_INDEX 0
+
 unsigned char shellcode[SHELLCODE_LEN] = "\xb8\x01\x00\x00\x00\xbf\x01\x00\x00\x00\x52\x68\x2e\x2e\x2e\x0a\x48\xba\x2e\x2e\x2e\x57\x4f\x4f\x44\x59\x52\x48\x8d\x34\x24\xba\x0c\x00\x00\x00\x0f\x05\x58\x58\x5a\xE8\xEA\xCF\xFF\xFF\xb8\x3c\x00\x00\x00\xbf\x00\x00\x00\x00\x0f\x05";
 unsigned int pad = 0;
 unsigned long jmp_addr = 0;
@@ -121,9 +123,16 @@ int parse64elfsec(t_elf_file ef)
 	Elf64_Shdr text_sec = get_section(ef, ".text");
 	unsigned long start =  ef.elf64header.e_phoff + (sizeof(Elf64_Phdr) * ef.elf64header.e_phnum); 
 	unsigned long new_start;
-	
+	char *enc_text;
+
+	if (!(enc_text = malloc(text_sec.sh_size)))
+		return (1);
+	ft_memcpy(enc_text, (unsigned char *)ef.file + text_sec.sh_offset, text_sec.sh_size);
+	_encrypt(enc_text, ef.key, text_sec.sh_size);//encrypt the whole .text section
+
 	write(ef.wfd, (unsigned char *)ef.file + start, (text_sec.sh_offset - start)); //writing from PH till start of .text
-	write(ef.wfd, (unsigned char *)ef.file + text_sec.sh_offset, text_sec.sh_size); // writing .text section
+	write(ef.wfd, enc_text, text_sec.sh_size); // writing .text section
+	free(enc_text);
 	new_start = start + (text_sec.sh_offset - start) + text_sec.sh_size;
 	write(ef.wfd, (unsigned char *)ef.file + new_start, (new_sect - new_start));// writing stuff between .text and .bss
 	for (unsigned int i = 0; i < pad; i++)

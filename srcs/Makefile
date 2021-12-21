@@ -13,7 +13,7 @@
 SRC = woody.c utils.c elf64.c
 CC = gcc
 CFLAGS = -c -Wall -Wextra -Werror
-OBJ = $(SRC:.c=.o) encryption/encrypt.o
+OBJ = $(SRC:.c=.o) 
 
 NAME = woody_woodpacker
 
@@ -21,7 +21,7 @@ all : $(NAME)
 
 $(NAME) : $(OBJ)
 	make -C libft
-	$(CC) -fsanitize=address -o $(NAME) $(OBJ)  libft/libft.a
+	$(CC) -fsanitize=address -o $(NAME) $(OBJ)  encryption/encrypt.o libft/libft.a
 
 %.o: %.c
 	$(CC) $(CFLAGS) $? -o $@

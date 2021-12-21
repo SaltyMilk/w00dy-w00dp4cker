@@ -1,7 +1,7 @@
 
 global _encrypt
 
-;takes two strings as param (rdi = str to encrypt, rsi = key to encrypt)
+;takes two strings as param (rdi = str to encrypt, rsi = key to encrypt, rdx = length of str)
 _encrypt:
 	xor rcx, rcx
 	reset:
@@ -12,10 +12,10 @@ _encrypt:
 		sub byte[rdi + rcx], cl
 		inc rbx
 		inc rcx
-		cmp byte[rdi + rcx], 0
+		cmp rcx, rdx
 		je exit
 		cmp byte[rsi + rbx], 0
 		je reset
 		jmp loop
-exit: 
+exit:
 	retn

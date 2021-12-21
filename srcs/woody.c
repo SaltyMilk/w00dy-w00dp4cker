@@ -64,10 +64,12 @@ int ft_woody(void *file, char *fname, unsigned int fsize)
 	ef.fname = fname;
 	ef.file = file;
 	ef.fsize = fsize;
+	ef.key = strdup("mdr");
 	if ((ef.wfd = open_wfile()) < 0)
 		return (1);
 	if (parse_magic(ef))
 		return (1);	
+	free(ef.key);
 	return (0);
 }
 
@@ -105,7 +107,10 @@ int		main(int argc, char **argv)
 		if ((file = open_file(arg_cpy, &fsize)))
 		{
 			if (ft_woody(file, arg_cpy[1], fsize))
+			{
+				free_sp(arg_cpy);
 				return (1);
+			}
 		}
 	}
 	free_sp(arg_cpy);
