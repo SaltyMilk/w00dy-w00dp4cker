@@ -1,10 +1,12 @@
 #include "woody.h"
-
-#define SHELLCODE_LEN 51 + 5 +2
-#define JMP_INDEX 42
+//								  decrypt shell code len   |  key length (inc 00)
+#define SHELLCODE_LEN 51 + 5 +2 + 60  +3                    +  4
+#define JMP_INDEX 105 
 #define KEY_INDEX 0
-
-unsigned char shellcode[SHELLCODE_LEN] = "\xb8\x01\x00\x00\x00\xbf\x01\x00\x00\x00\x52\x68\x2e\x2e\x2e\x0a\x48\xba\x2e\x2e\x2e\x57\x4f\x4f\x44\x59\x52\x48\x8d\x34\x24\xba\x0c\x00\x00\x00\x0f\x05\x58\x58\x5a\xE8\xEA\xCF\xFF\xFF\xb8\x3c\x00\x00\x00\xbf\x00\x00\x00\x00\x0f\x05";
+#define DECREL_INDEX 51
+#define DECREL_DATA_INDEX 54
+#define STRSIZE_INDEX 43
+unsigned char shellcode[SHELLCODE_LEN] = "\xb8\x01\x00\x00\x00\xbf\x01\x00\x00\x00\x52\x68\x2e\x2e\x2e\x0a\x48\xba\x2e\x2e\x2e\x57\x4f\x4f\x44\x59\x52\x48\x8d\x34\x24\xba\x0c\x00\x00\x00\x0f\x05\x48\x31\xd2\x48\xba\x01\x00\x00\x00\x00\x00\x00\x00\x48\x8d\x3d\xba\xbe\xba\xbe\x48\x8d\x35\x38\x00\x00\x00\x48\x31\xc9\x48\x31\xdb\x44\x8a\x0c\x1e\x00\x0c\x0f\x44\x30\x0c\x0f\x48\xff\xc3\x48\xff\xc1\x48\x39\xd1\x74\x08\x80\x3c\x1e\x00\x74\xe1\xeb\xe2\x58\x58\x5a\xE8\xEA\xCF\xFF\xFF\xb8\x3c\x00\x00\x00\xbf\x00\x00\x00\x00\x0f\x05mdr\x00";
 unsigned int pad = 0;
 unsigned long jmp_addr = 0;
 unsigned long old_entry = 0;
@@ -101,22 +103,36 @@ int parse64elfph(t_elf_file ef)
 	return (0);
 }
 
-void update_jmp_addr()
+//mod is plain black magic 
+void update_shellcode_reladdr(unsigned int op_index, unsigned int dat_index, int mod)
 {
 	long rel_jmp = 0;
-	rel_jmp = -(new_entry + 37 - old_entry); //37 is the position of the jmp (e9) in shellcode 
+	rel_jmp = -(new_entry + op_index - old_entry);  
 	char *s = (char *)&rel_jmp;
-	int j = JMP_INDEX;
+	int j = dat_index;
 	for(int i = 0; i < 4; i++)
 	{
 		char c = (char)s[i];
-		if (i == 0)
+		if (i == 0 && mod)
+			c -= 7;
+		else if (i == 0)
 			c -= 5;
 		shellcode[j] = c;
 		j++;
 	}
 }
 
+void update_shellcode_value(unsigned int index, long val)
+{
+	char *s = (char *)&val;
+	int j = index;
+	for(int i = 0; i < 8; i++)
+	{
+		char c = (char)s[i];
+		shellcode[j] = c;
+		j++;
+	}
+}
 int parse64elfsec(t_elf_file ef)
 {
 	Elf64_Off new_sect = get_section(ef, ".bss").sh_offset;
@@ -137,7 +153,11 @@ int parse64elfsec(t_elf_file ef)
 	write(ef.wfd, (unsigned char *)ef.file + new_start, (new_sect - new_start));// writing stuff between .text and .bss
 	for (unsigned int i = 0; i < pad; i++)
 		write(ef.wfd, "\x00", 1); // padding 00 for what were previously "virtual memory"
-	update_jmp_addr();
+
+	update_shellcode_reladdr(JMP_INDEX - 1, JMP_INDEX, 0);
+	update_shellcode_reladdr(DECREL_INDEX, DECREL_DATA_INDEX, 1);
+	update_shellcode_value(STRSIZE_INDEX, text_sec.sh_size);
+	
 	write(ef.wfd, shellcode, SHELLCODE_LEN); // injecting our shellcode
 	write(ef.wfd, (unsigned char *)ef.file + new_sect, ef.fsize - new_sect); // remove for binary compression, it just adds the shdrs 
 	return (0);	
