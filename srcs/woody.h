@@ -11,6 +11,8 @@
 # include <ar.h>
 # include <stdio.h>
 
+#define DEFAULT_KEY_LEN 16
+
 typedef struct s_elf_file
 {
 	void			*file;
@@ -31,6 +33,7 @@ void free_sp(char **sp);
 char **copy_sp(char **sp);
 unsigned int smallest_len(char *s1, char *s2);
 int str_is_nullterm(t_elf_file ef, unsigned int offset);
+char	*ft_strnjoin(char const *s1, size_t n, char const *s2);
 
 extern void _encrypt(char *s, char *key, unsigned long);
 

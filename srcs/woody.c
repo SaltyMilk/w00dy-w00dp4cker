@@ -45,8 +45,8 @@ int parse_magic(t_elf_file ef)
 	else if (ef.elf32header.e_ident[EI_CLASS] == ELFCLASS64)
 	{
 		ft_memcpy(&ef.elf64header, ef.file, sizeof(Elf64_Ehdr));
-		if (ef.elf64header.e_type != ET_EXEC)
-			printf("wood_woodpacker: %s is not an executable\n", ef.fname);
+		if (ef.elf64header.e_type != ET_EXEC && ef.elf64header.e_type != ET_DYN)
+			printf("woody_woodpacker: %s is not an executable\n", ef.fname);
 		else if (parse64elf(ef))
 			ft_printf("woody_woodpacker: File corrupted\n");
 	}
@@ -64,17 +64,53 @@ int open_wfile()
 	return (fd);
 }
 
-int ft_woody(void *file, char *fname, unsigned int fsize)
+char *generate_key()
+{
+	char *ret;
+	int fd;
+	if ((fd = open("/dev/urandom", O_RDONLY)) < 0)
+		return (NULL);
+	if (!(ret = ft_calloc(1, DEFAULT_KEY_LEN + 1)))
+		return (NULL);	
+	if (read(fd, ret, DEFAULT_KEY_LEN) < 0)
+	{
+		free(ret);
+		return (NULL);
+	}
+	ret[DEFAULT_KEY_LEN] = 0;
+	return (ret);
+} 
+
+int ft_woody(void *file, char *fname, unsigned int fsize, char *key)
 {
 	t_elf_file	ef;
 	ef.fname = fname;
 	ef.file = file;
 	ef.fsize = fsize;
-	ef.key = strdup("mdr");
-	if ((ef.wfd = open_wfile()) < 0)
+	
+	if (!key)
+		ef.key = generate_key();
+	else
+		ef.key = ft_strdup(key);
+	if (!ef.key)
+	{
+		printf("woody_woodpacker: could not generate key\n");
 		return (1);
+	}
+	printf("Encryption key=");
+	for (size_t i = 0; i < ft_strlen(ef.key); i++)
+		printf("\\x%hhx ", ef.key[i]);
+	printf("\n");
+	if ((ef.wfd = open_wfile()) < 0)
+	{
+		free(ef.key);
+		return (1);
+	}
 	if (parse_magic(ef))
-		return (1);	
+	{
+		free(ef.key);
+		return (1);
+	}
 	free(ef.key);
 	return (0);
 }
@@ -108,19 +144,21 @@ int		main(int argc, char **argv)
 		arg_cpy[2] = NULL;
 		argc = 2;
 	}
-	if (argc == 2)
+	if (argc == 2 || argc == 3)
 	{
-		if ( ft_strnstr(arg_cpy[1], "woody", ft_strlen(arg_cpy[1])) )
+		if (ft_strnstr(arg_cpy[1], "woody", ft_strlen(arg_cpy[1])) )
 			printf("woody_woodpacker: You devil hacker you used the forbiden word gtfo of here\n");
 		else if ((file = open_file(arg_cpy, &fsize)))
 		{
-			if (ft_woody(file, arg_cpy[1], fsize))
+			if (ft_woody(file, arg_cpy[1], fsize, arg_cpy[2]))
 			{
 				free_sp(arg_cpy);
 				return (1);
 			}
 		}
 	}
+	else
+		printf("woody_woodpacker: Too many arguments\n");
 	free_sp(arg_cpy);
 	return (0);
 }

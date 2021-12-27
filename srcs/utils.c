@@ -54,3 +54,29 @@ char **copy_sp(char **sp)
 	cpy[i] = NULL;
 	return (cpy);
 }
+
+char	*ft_strnjoin(char const *s1, size_t n, char const *s2)
+{
+	char	*jstr;
+	size_t	i;
+
+	if (!s1 || !s2)
+		return (NULL);
+	i = 0;
+	if (!(jstr = malloc((n + ft_strlen(s2) + 1) * sizeof(char))))
+		return (NULL);
+	while (i < n)
+	{
+		jstr[i] = *s1;
+		s1++;
+		i++;
+	}
+	while (*s2)
+	{
+		jstr[i] = *s2;
+		s2++;
+		i++;
+	}
+	jstr[i] = '\0';
+	return (jstr);
+}
