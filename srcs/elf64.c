@@ -184,7 +184,7 @@ int parse64elfsec(t_elf_file ef)
 	update_shellcode_value(STRSIZE_INDEX, text_sec.sh_size);
 	
 	write(ef.wfd, shellcode, SHELLCODE_LEN); // injecting our shellcode
-	write(ef.wfd, (unsigned char *)ef.file + new_sect, ef.fsize - new_sect); // remove for binary compression, it just adds the shdrs 
+//	write(ef.wfd, (unsigned char *)ef.file + new_sect, ef.fsize - new_sect); // remove for binary compression, it just adds the shdrs 
 	return (0);	
 }
 
