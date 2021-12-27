@@ -9,7 +9,7 @@ void	*open_file(char **argv, unsigned int *fsize)
 
 	if ((fd = open(argv[1], O_RDONLY)) < 0)
 	{
-		ft_printf("woody_woodpacker: '%s': No such file\n", argv[1]);
+		ft_printf("woody_woodpacker: '%s': Couldn't open file\n", argv[1]);
 		return (NULL);
 	}
 	start = lseek(fd, (size_t)0, SEEK_CUR);
@@ -28,10 +28,10 @@ int parse_magic(t_elf_file ef)
 		return (0);
 	}
 	ft_memcpy(&ef.elf32header, ef.file, sizeof(Elf32_Ehdr));
-	if (ef.elf32header.e_ident[EI_MAG0] != ELFMAG0  ||
-		ef.elf32header.e_ident[EI_MAG1] != ELFMAG1  ||
-		ef.elf32header.e_ident[EI_MAG2] != ELFMAG2  ||
-		ef.elf32header.e_ident[EI_MAG3] != ELFMAG3  ||
+	if (ef.elf32header.e_ident[EI_MAG0] != ELFMAG0		||
+		ef.elf32header.e_ident[EI_MAG1] != ELFMAG1		||
+		ef.elf32header.e_ident[EI_MAG2] != ELFMAG2  	||
+		ef.elf32header.e_ident[EI_MAG3] != ELFMAG3		||
 	 	ef.elf32header.e_ident[EI_CLASS] == ELFCLASSNONE)
 	{
 		ft_printf("woody_woodpacker: %s: file format not recognized\n", ef.fname);
@@ -45,7 +45,9 @@ int parse_magic(t_elf_file ef)
 	else if (ef.elf32header.e_ident[EI_CLASS] == ELFCLASS64)
 	{
 		ft_memcpy(&ef.elf64header, ef.file, sizeof(Elf64_Ehdr));
-		if (parse64elf(ef))
+		if (ef.elf64header.e_type != ET_EXEC)
+			printf("wood_woodpacker: %s is not an executable\n", ef.fname);
+		else if (parse64elf(ef))
 			ft_printf("woody_woodpacker: File corrupted\n");
 	}
 	return (0);
