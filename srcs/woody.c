@@ -9,7 +9,7 @@ void	*open_file(char **argv, unsigned int *fsize)
 
 	if ((fd = open(argv[1], O_RDONLY)) < 0)
 	{
-		ft_printf("nm: '%s': No such file\n", argv[1]);
+		ft_printf("woody_woodpacker: '%s': No such file\n", argv[1]);
 		return (NULL);
 	}
 	start = lseek(fd, (size_t)0, SEEK_CUR);
@@ -22,9 +22,13 @@ void	*open_file(char **argv, unsigned int *fsize)
 
 int parse_magic(t_elf_file ef)
 {
+	if (sizeof(Elf32_Addr) > ef.fsize)
+	{
+		ft_printf("woody_woodpacker: %s: file format not recognized\n", ef.fname);
+		return (0);
+	}
 	ft_memcpy(&ef.elf32header, ef.file, sizeof(Elf32_Ehdr));
-	if (sizeof(Elf32_Addr) > ef.fsize				||
-		ef.elf32header.e_ident[EI_MAG0] != ELFMAG0  ||
+	if (ef.elf32header.e_ident[EI_MAG0] != ELFMAG0  ||
 		ef.elf32header.e_ident[EI_MAG1] != ELFMAG1  ||
 		ef.elf32header.e_ident[EI_MAG2] != ELFMAG2  ||
 		ef.elf32header.e_ident[EI_MAG3] != ELFMAG3  ||
@@ -104,7 +108,9 @@ int		main(int argc, char **argv)
 	}
 	if (argc == 2)
 	{
-		if ((file = open_file(arg_cpy, &fsize)))
+		if ( ft_strnstr(arg_cpy[1], "woody", ft_strlen(arg_cpy[1])) )
+			printf("woody_woodpacker: You devil hacker you used the forbiden word gtfo of here\n");
+		else if ((file = open_file(arg_cpy, &fsize)))
 		{
 			if (ft_woody(file, arg_cpy[1], fsize))
 			{

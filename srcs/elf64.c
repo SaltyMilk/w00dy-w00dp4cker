@@ -60,6 +60,31 @@ Elf64_Shdr get_section(t_elf_file ef, char *secname)
 	return (def);
 }
 
+int is_stripped(t_elf_file ef)
+{
+	unsigned long n_sec = ef.elf64header.e_shnum;
+	unsigned char *ptr = (unsigned char *)ef.file + ef.elf64header.e_shoff;
+	Elf64_Shdr sect_headers[n_sec];
+	Elf64_Shdr strtab;
+	int ret = 1;	
+
+	if ((ef.elf64header.e_shoff+ (sizeof(Elf64_Shdr) * n_sec)) > ef.fsize)//boundary check
+		return (1);
+	for (unsigned long i = 0; i < n_sec; i++) // Parse section headers
+		ft_memcpy(&sect_headers[i], ptr + (sizeof(Elf64_Shdr) * i), sizeof(Elf64_Shdr)); 
+	strtab = sect_headers[ef.elf64header.e_shstrndx];
+	for (unsigned long i = 0; i < n_sec; i++)
+	{
+		if ((strtab.sh_offset + sect_headers[i].sh_name) > ef.fsize)//boundary check
+			return (1);
+		char *name =(char*)ef.file + strtab.sh_offset + sect_headers[i].sh_name; 
+		if (!ft_strncmp(name, ".symtab", ft_strlen(".symtab")))
+			ret = 0;
+	}
+	return (ret);
+}
+
+
 int parse64elfheader(t_elf_file ef)
 {
 	Elf64_Ehdr new_header;
@@ -165,6 +190,8 @@ int parse64elfsec(t_elf_file ef)
 
 int parse64elf(t_elf_file ef)
 {
+	if (is_stripped(ef))
+		return (1);
 	if (parse64elfheader(ef))
 		return (1);
 	parse64elfph(ef);
