@@ -1,4 +1,4 @@
-#include "woody.h"
+#include "macho_woody.h"
 
 void	*open_file(char **argv, unsigned int *fsize)
 {
@@ -20,34 +20,27 @@ void	*open_file(char **argv, unsigned int *fsize)
 	return (f == MAP_FAILED ? NULL : f);
 }
 
-int parse_magic(t_elf_file ef)
+int parse_magic(t_mf mf)
 {
-	if (sizeof(Elf32_Ehdr) > ef.fsize)
+	if (sizeof(t_mach_header) > mf.fsize)
 	{
-		ft_printf("woody_woodpacker: %s: file format not recognized\n", ef.fname);
+		ft_printf("woody_woodpacker: %s: file format not recognized\n", mf.fname);
 		return (0);
 	}
-	ft_memcpy(&ef.elf32header, ef.file, sizeof(Elf32_Ehdr));
-	if (ef.elf32header.e_ident[EI_MAG0] != ELFMAG0		||
-		ef.elf32header.e_ident[EI_MAG1] != ELFMAG1		||
-		ef.elf32header.e_ident[EI_MAG2] != ELFMAG2  	||
-		ef.elf32header.e_ident[EI_MAG3] != ELFMAG3		||
-	 	ef.elf32header.e_ident[EI_CLASS] == ELFCLASSNONE)
+	ft_memcpy(&mf.mach32header, mf.file, sizeof(t_mach_header));
+	if (mf.mach32header.magic != MH_MAGIC_64 && mf.mach32header.magic != MH_CIGAM_64)
 	{
-		ft_printf("woody_woodpacker: %s: file format not recognized\n", ef.fname);
+		ft_printf("woody_woodpacker: %s: file format not recognized\n", mf.fname);
 		return (0);
 	}
-	if (ef.elf32header.e_ident[EI_CLASS] == ELFCLASS32)
+	if (sizeof(t_mach_header_64) > mf.fsize)
+		printf("wood_woodpacker: File corrupted\n");
+	else
 	{
-//		if (parse32elf(ef))
-		//	ft_printf("woody_woodpacker: File corrupted\n");
-	}
-	else if (ef.elf32header.e_ident[EI_CLASS] == ELFCLASS64)
-	{
-		ft_memcpy(&ef.elf64header, ef.file, sizeof(Elf64_Ehdr));
-		if (ef.elf64header.e_type != ET_EXEC && ef.elf64header.e_type != ET_DYN)
-			printf("woody_woodpacker: %s is not an executable\n", ef.fname);
-		else if (parse64elf(ef))
+		ft_memcpy(&mf.mach64header, mf.file, sizeof(t_mach_header_64));
+		if (mf.mach64header.filetype != MH_EXECUTE)
+			printf("woody_woodpacker: %s is not an executable\n", mf.fname);
+		else if (parse64macho(mf))
 			ft_printf("woody_woodpacker: File corrupted\n");
 	}
 	return (0);
@@ -86,35 +79,35 @@ char *generate_key()
 
 int ft_woody(void *file, char *fname, unsigned int fsize, char *key)
 {
-	t_elf_file	ef;
-	ef.fname = fname;
-	ef.file = file;
-	ef.fsize = fsize;
+	t_mf	mf;
+	mf.fname = fname;
+	mf.file = file;
+	mf.fsize = fsize;
 	
 	if (!key)
-		ef.key = generate_key();
+		mf.key = generate_key();
 	else
-		ef.key = ft_strdup(key);
-	if (!ef.key)
+		mf.key = ft_strdup(key);
+	if (!mf.key)
 	{
 		printf("woody_woodpacker: could not generate key\n");
 		return (1);
 	}
 	printf("key_value: ");
-	for (size_t i = 0; i < ft_strlen(ef.key); i++)
-		printf("\\x%hhx", ef.key[i]);
+	for (size_t i = 0; i < ft_strlen(mf.key); i++)
+		printf("\\x%hhx", mf.key[i]);
 	printf("\n");
-	if ((ef.wfd = open_wfile()) < 0)
+	if ((mf.wfd = open_wfile()) < 0)
 	{
-		free(ef.key);
+		free(mf.key);
 		return (1);
 	}
-	if (parse_magic(ef))
+	if (parse_magic(mf))
 	{
-		free(ef.key);
+		free(mf.key);
 		return (1);
 	}
-	free(ef.key);
+	free(mf.key);
 	return (0);
 }
 

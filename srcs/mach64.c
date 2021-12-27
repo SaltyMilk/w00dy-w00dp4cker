@@ -1,4 +1,4 @@
-#include "woody.h"
+#include "macho_woody.h"
 //								  decrypt shell code len  
 #define SHELLCODE_LEN 51 + 5 +2 + 60  +3                    
 #define JMP_INDEX 105 
@@ -12,23 +12,23 @@ unsigned long jmp_addr = 0;
 unsigned long old_entry = 0;
 unsigned long new_entry = 0;
 
-Elf64_Addr new_entryaddr(t_elf_file ef)
+Elf64_Addr new_entryaddr(t_mf mf)
 {
-	unsigned long n_sec = ef.elf64header.e_shnum;
-	unsigned char *ptr = (unsigned char *)ef.file + ef.elf64header.e_shoff;
+	unsigned long n_sec = mf.elf64header.e_shnum;
+	unsigned char *ptr = (unsigned char *)mf.file + mf.elf64header.e_shoff;
 	Elf64_Shdr sect_headers[n_sec];
 	Elf64_Shdr strtab;
 
-	if ((ef.elf64header.e_shoff+ (sizeof(Elf64_Shdr) * n_sec)) > ef.fsize)//boundary check
+	if ((mf.elf64header.e_shoff+ (sizeof(Elf64_Shdr) * n_sec)) > mf.fsize)//boundary check
 		return (0);
 	for (unsigned long i = 0; i < n_sec; i++) // Parse section headers
 		ft_memcpy(&sect_headers[i], ptr + (sizeof(Elf64_Shdr) * i), sizeof(Elf64_Shdr)); 
-	strtab = sect_headers[ef.elf64header.e_shstrndx];
+	strtab = sect_headers[mf.elf64header.e_shstrndx];
 	for (unsigned long i = 0; i < n_sec; i++)
 	{
-		if ((strtab.sh_offset + sect_headers[i].sh_name) > ef.fsize)//boundary check
+		if ((strtab.sh_offset + sect_headers[i].sh_name) > mf.fsize)//boundary check
 			return (0);
-		char *name =(char*)ef.file + strtab.sh_offset + sect_headers[i].sh_name; 
+		char *name =(char*)mf.file + strtab.sh_offset + sect_headers[i].sh_name; 
 		if (!ft_strncmp(name, ".bss", ft_strlen(name) + 1))
 			return (sect_headers[i].sh_addr + sect_headers[i].sh_size);
 	}
@@ -36,48 +36,48 @@ Elf64_Addr new_entryaddr(t_elf_file ef)
 }
 
 
-Elf64_Shdr get_section(t_elf_file ef, char *secname)
+Elf64_Shdr get_section(t_mf mf, char *secname)
 {
-	unsigned long n_sec = ef.elf64header.e_shnum;
-	unsigned char *ptr = (unsigned char *)ef.file + ef.elf64header.e_shoff;
+	unsigned long n_sec = mf.elf64header.e_shnum;
+	unsigned char *ptr = (unsigned char *)mf.file + mf.elf64header.e_shoff;
 	Elf64_Shdr sect_headers[n_sec];
 	Elf64_Shdr strtab;
 	Elf64_Shdr def = {0};
 
-	if ((ef.elf64header.e_shoff+ (sizeof(Elf64_Shdr) * n_sec)) > ef.fsize)//boundary check
+	if ((mf.elf64header.e_shoff+ (sizeof(Elf64_Shdr) * n_sec)) > mf.fsize)//boundary check
 		return (def);
 	for (unsigned long i = 0; i < n_sec; i++) // Parse section headers
 		ft_memcpy(&sect_headers[i], ptr + (sizeof(Elf64_Shdr) * i), sizeof(Elf64_Shdr)); 
-	strtab = sect_headers[ef.elf64header.e_shstrndx];
+	strtab = sect_headers[mf.elf64header.e_shstrndx];
 	for (unsigned long i = 0; i < n_sec; i++)
 	{
-		if ((strtab.sh_offset + sect_headers[i].sh_name) > ef.fsize)//boundary check
+		if ((strtab.sh_offset + sect_headers[i].sh_name) > mf.fsize)//boundary check
 			return (def);
-		char *name =(char*)ef.file + strtab.sh_offset + sect_headers[i].sh_name; 
+		char *name =(char*)mf.file + strtab.sh_offset + sect_headers[i].sh_name; 
 		if (!ft_strncmp(name, secname, ft_strlen(name) + 1))
 			return (sect_headers[i]);
 	}
 	return (def);
 }
 
-int is_stripped(t_elf_file ef)
+int is_stripped(t_mf mf)
 {
-	unsigned long n_sec = ef.elf64header.e_shnum;
-	unsigned char *ptr = (unsigned char *)ef.file + ef.elf64header.e_shoff;
+	unsigned long n_sec = mf.elf64header.e_shnum;
+	unsigned char *ptr = (unsigned char *)mf.file + mf.elf64header.e_shoff;
 	Elf64_Shdr sect_headers[n_sec];
 	Elf64_Shdr strtab;
 	int ret = 1;	
 
-	if ((ef.elf64header.e_shoff+ (sizeof(Elf64_Shdr) * n_sec)) > ef.fsize)//boundary check
+	if ((mf.elf64header.e_shoff+ (sizeof(Elf64_Shdr) * n_sec)) > mf.fsize)//boundary check
 		return (1);
 	for (unsigned long i = 0; i < n_sec; i++) // Parse section headers
 		ft_memcpy(&sect_headers[i], ptr + (sizeof(Elf64_Shdr) * i), sizeof(Elf64_Shdr)); 
-	strtab = sect_headers[ef.elf64header.e_shstrndx];
+	strtab = sect_headers[mf.elf64header.e_shstrndx];
 	for (unsigned long i = 0; i < n_sec; i++)
 	{
-		if ((strtab.sh_offset + sect_headers[i].sh_name) > ef.fsize)//boundary check
+		if ((strtab.sh_offset + sect_headers[i].sh_name) > mf.fsize)//boundary check
 			return (1);
-		char *name =(char*)ef.file + strtab.sh_offset + sect_headers[i].sh_name; 
+		char *name =(char*)mf.file + strtab.sh_offset + sect_headers[i].sh_name; 
 		if (!ft_strncmp(name, ".symtab", ft_strlen(".symtab")))
 			ret = 0;
 	}
@@ -85,30 +85,30 @@ int is_stripped(t_elf_file ef)
 }
 
 
-int parse64elfheader(t_elf_file ef)
+int parse64elfheader(t_mf mf)
 {
-	Elf64_Ehdr new_header;
+	t_mach_header_64 new_header;
 
-	ft_memcpy(&new_header, &ef.elf64header, sizeof(Elf64_Ehdr));
+	ft_memcpy(&new_header, &mf.mach64header, sizeof(t_mach_header_64));
 	new_header.e_shnum = 0;
 	new_header.e_shentsize = 0;
 	new_header.e_shoff = 0;
 //	new_header.e_shoff = new_header.e_shoff + SHELLCODE_LEN + pad;
 	old_entry = new_header.e_entry;
-	if (!(new_header.e_entry = new_entryaddr(ef)))
+	if (!(new_header.e_entry = new_entryaddr(mf)))
 		return (1);
 	new_entry = new_header.e_entry;
-	write(ef.wfd, &new_header, sizeof(Elf64_Ehdr));
+	write(mf.wfd, &new_header, sizeof(Elf64_Ehdr));
 	return (0);
 }
 
-int parse64elfph(t_elf_file ef)
+int parse64elfph(t_mf mf)
 {
 	Elf64_Phdr phdr;
-	unsigned char *ptr = (unsigned char *)ef.file  + ef.elf64header.e_phoff;
+	unsigned char *ptr = (unsigned char *)mf.file  + mf.elf64header.e_phoff;
 	unsigned int i = 0;
 
-	while (i < ef.elf64header.e_phnum)
+	while (i < mf.elf64header.e_phnum)
 	{
 		ft_memcpy(&phdr, ptr, sizeof(Elf64_Phdr));
 		ptr += sizeof(Elf64_Phdr);
@@ -117,12 +117,12 @@ int parse64elfph(t_elf_file ef)
 			if (phdr.p_flags == (PF_R | PF_W))//Segment containning bss and my new section
 			{
 				pad = phdr.p_memsz - phdr.p_filesz;
-				phdr.p_memsz += SHELLCODE_LEN + ft_strlen(ef.key);
+				phdr.p_memsz += SHELLCODE_LEN + ft_strlen(mf.key);
 				phdr.p_filesz = phdr.p_memsz;
 			}
 			phdr.p_flags = PF_X | PF_W |PF_R;
 		}
-		write(ef.wfd, &phdr, sizeof(Elf64_Phdr));
+		write(mf.wfd, &phdr, sizeof(Elf64_Phdr));
 		i++;
 	}
 	return (0);
@@ -164,45 +164,45 @@ char *update_shellcode_key(char *key)
 	return (ft_strnjoin((char *)shellcode, SHELLCODE_LEN, key));
 }
 
-int parse64elfsec(t_elf_file ef)
+int parse64elfsec(t_mf mf)
 {
-	Elf64_Off new_sect = get_section(ef, ".bss").sh_offset;
-	Elf64_Shdr text_sec = get_section(ef, ".text");
-	unsigned long start =  ef.elf64header.e_phoff + (sizeof(Elf64_Phdr) * ef.elf64header.e_phnum); 
+	Elf64_Off new_sect = get_section(mf, ".bss").sh_offset;
+	Elf64_Shdr text_sec = get_section(mf, ".text");
+	unsigned long start =  mf.elf64header.e_phoff + (sizeof(Elf64_Phdr) * mf.elf64header.e_phnum); 
 	unsigned long new_start;
 	char *enc_text;
 
 	if (!(enc_text = malloc(text_sec.sh_size)))
 		return (1);
-	ft_memcpy(enc_text, (unsigned char *)ef.file + text_sec.sh_offset, text_sec.sh_size);
-	_encrypt(enc_text, ef.key, text_sec.sh_size);//encrypt the whole .text section
+	ft_memcpy(enc_text, (unsigned char *)mf.file + text_sec.sh_offset, text_sec.sh_size);
+	_encrypt(enc_text, mf.key, text_sec.sh_size);//encrypt the whole .text section
 
-	write(ef.wfd, (unsigned char *)ef.file + start, (text_sec.sh_offset - start)); //writing from PH till start of .text
-	write(ef.wfd, enc_text, text_sec.sh_size); // writing .text section
+	write(mf.wfd, (unsigned char *)mf.file + start, (text_sec.sh_offset - start)); //writing from PH till start of .text
+	write(mf.wfd, enc_text, text_sec.sh_size); // writing .text section
 	free(enc_text);
 	new_start = start + (text_sec.sh_offset - start) + text_sec.sh_size;
-	write(ef.wfd, (unsigned char *)ef.file + new_start, (new_sect - new_start));// writing stuff between .text and .bss
+	write(mf.wfd, (unsigned char *)mf.file + new_start, (new_sect - new_start));// writing stuff between .text and .bss
 	for (unsigned int i = 0; i < pad; i++)
-		write(ef.wfd, "\x00", 1); // padding 00 for what were previously "virtual memory"
+		write(mf.wfd, "\x00", 1); // padding 00 for what were previously "virtual memory"
 
 	update_shellcode_reladdr(JMP_INDEX - 1, JMP_INDEX, 0);
 	update_shellcode_reladdr(DECREL_INDEX, DECREL_DATA_INDEX, 1);
 	update_shellcode_value(STRSIZE_INDEX, text_sec.sh_size);
 
-	char *new_sc = update_shellcode_key(ef.key);
-	write(ef.wfd, new_sc, SHELLCODE_LEN + ft_strlen(ef.key)); // injecting our shellcode
-//	write(ef.wfd, (unsigned char *)ef.file + new_sect, ef.fsize - new_sect); // remove for binary compression, it just adds the shdrs 
+	char *new_sc = update_shellcode_key(mf.key);
+	write(mf.wfd, new_sc, SHELLCODE_LEN + ft_strlen(mf.key)); // injecting our shellcode
+//	write(mf.wfd, (unsigned char *)mf.file + new_sect, mf.fsize - new_sect); // remove for binary compression, it just adds the shdrs 
 	free(new_sc);
 	return (0);	
 }
 
-int parse64elf(t_elf_file ef)
+int parse64elf(t_mf mf)
 {
-	if (is_stripped(ef))
+	if (is_stripped(mf))
 		return (1);
-	if (parse64elfheader(ef))
+	if (parse64elfheader(mf))
 		return (1);
-	parse64elfph(ef);
-	parse64elfsec(ef);
+	parse64elfph(mf);
+	parse64elfsec(mf);
 	return (0);
 }

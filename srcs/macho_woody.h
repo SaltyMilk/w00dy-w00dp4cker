@@ -1,8 +1,8 @@
-#ifndef WOODY_H
-#define WOODY_H
+#ifndef MACH_WOODY_H
+#define MACH_WOODY_H
 
 # include "libft/libft.h"
-# include <elf.h>
+# include <mach-o/loader.h>
 # include <sys/mman.h>
 # include <sys/stat.h>
 # include <sys/types.h>
@@ -12,26 +12,27 @@
 # include <stdio.h>
 
 #define DEFAULT_KEY_LEN 16
+typedef struct mach_header t_mach_header;
+typedef struct mach_header_64 t_mach_header_64;
 
-typedef struct s_elf_file
+typedef struct s_mf
 {
 	void			*file;
 	char			*fname;
-	Elf32_Ehdr		elf32header;
-	Elf64_Ehdr		elf64header;
+	t_mach_header		mach32header;
+	t_mach_header_64		mach64header;
 	int				wfd;
 	unsigned int	fsize;
 	char			*key;
-}				t_elf_file;
+}				t_mf;
 
-//elf64
-int parse64elf(t_elf_file ef);
+//macho64
+int parse64macho(t_mf mf);
 //Utils
 unsigned int sp_len(char **sp);
 void free_sp(char **sp);
 char **copy_sp(char **sp);
 unsigned int smallest_len(char *s1, char *s2);
-int str_is_nullterm(t_elf_file ef, unsigned int offset);
 char	*ft_strnjoin(char const *s1, size_t n, char const *s2);
 
 extern void _encrypt(char *s, char *key, unsigned long);
