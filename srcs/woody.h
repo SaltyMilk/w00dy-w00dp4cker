@@ -34,6 +34,6 @@ unsigned int smallest_len(char *s1, char *s2);
 int str_is_nullterm(t_elf_file ef, unsigned int offset);
 char	*ft_strnjoin(char const *s1, size_t n, char const *s2);
 
-extern void _encrypt(char *s, char *key, unsigned long);
+extern void _encryptSelmelc(char *s, char *key, unsigned long);
 
 #endif

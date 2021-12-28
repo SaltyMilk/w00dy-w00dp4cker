@@ -175,7 +175,7 @@ int parse64elfsec(t_elf_file ef)
 	if (!(enc_text = malloc(text_sec.sh_size)))
 		return (1);
 	ft_memcpy(enc_text, (unsigned char *)ef.file + text_sec.sh_offset, text_sec.sh_size);
-	_encrypt(enc_text, ef.key, text_sec.sh_size);//encrypt the whole .text section
+	_encryptSelmelc(enc_text, ef.key, text_sec.sh_size);//encrypt the whole .text section
 
 	write(ef.wfd, (unsigned char *)ef.file + start, (text_sec.sh_offset - start)); //writing from PH till start of .text
 	write(ef.wfd, enc_text, text_sec.sh_size); // writing .text section

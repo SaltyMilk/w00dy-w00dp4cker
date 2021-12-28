@@ -1,8 +1,8 @@
 
-global _encrypt
+global _encryptSelmelc
 
 ;takes two strings as param (rdi = str to encrypt, rsi = key to encrypt, rdx = length of str)
-_encrypt:
+_encryptSelmelc:
 	xor rcx, rcx
 	reset:
 		xor rbx, rbx

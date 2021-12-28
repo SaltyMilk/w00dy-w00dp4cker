@@ -14,6 +14,10 @@
 #define DEFAULT_KEY_LEN 16
 typedef struct mach_header t_mach_header;
 typedef struct mach_header_64 t_mach_header_64;
+typedef struct load_command t_load_command; 
+typedef struct segment_command_64 t_segment_command_64;
+typedef struct section_64 t_section;
+typedef struct entry_point_command t_entry_point_command;
 
 typedef struct s_mf
 {
@@ -35,6 +39,6 @@ char **copy_sp(char **sp);
 unsigned int smallest_len(char *s1, char *s2);
 char	*ft_strnjoin(char const *s1, size_t n, char const *s2);
 
-extern void _encrypt(char *s, char *key, unsigned long);
+extern void encryptSelmelc(char *s, char *key, unsigned long);
 
 #endif

@@ -16,7 +16,7 @@ ifeq ($(UNAME), Linux)
 SRC = woody.c utils.c elf64.c
 endif
 ifeq ($(UNAME), Darwin)
-SRC = macho_woody.c utils.c macho64.c
+SRC = macho_woody.c utils.c mach64.c
 endif
 
 CC = gcc
@@ -32,8 +32,15 @@ $(NAME) : $(OBJ) encryption/encrypt.o
 	$(CC) -fsanitize=address -o $(NAME) $(OBJ)  encryption/encrypt.o libft/libft.a
 
 
+ifeq ($(UNAME), Linux)
 encryption/encrypt.o: encryption/encrypt.s
 	nasm -felf64 encryption/encrypt.s -o encryption/encrypt.o
+endif
+
+ifeq ($(UNAME), Darwin)
+encryption/encrypt.o: encryption/encrypt.s
+	nasm -fmacho64 encryption/encrypt.s -o encryption/encrypt.o
+endif
 
 %.o: %.c
 	$(CC) $(CFLAGS) $? -o $@
