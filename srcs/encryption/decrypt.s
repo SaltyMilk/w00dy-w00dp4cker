@@ -1,8 +1,8 @@
 
-global _decrypt
+global _decryptSelmelc
 
 ;takes two strings as param (rdi = str to decrypt, rsi = key to decrypt, rdx = str length)
-_decrypt:
+_decryptSelmelc:
 ;	mov rdx, 0x4242424242424242
 ;	lea rdi, [rel $-0x4847464544434241]
 ;	lea rsi, [rel $+65]
