@@ -1,6 +1,5 @@
 # woody-woodpacker
-[WIP] Executable modifier. Injects arbitrary code and encrypts the base code then decrypts it at runtime.
-
+ELF/Mach-O Executable patcher. Injects arbitrary code and encrypts the base code then decrypts it at runtime.[WIP]
 
 # Run in docker
 ```
@@ -14,3 +13,8 @@ cd woody; make
 cd srcs
 make
 ```
+# Program usage
+```
+./woody_woodpacker exec_file [optional_encryption_key]
+```
+if no key is passed a random one will be generated
