@@ -6,7 +6,7 @@
 #define DECREL_INDEX 51
 #define DECREL_DATA_INDEX 54
 #define STRSIZE_INDEX 43
-unsigned char shellcode[SHELLCODE_LEN] = "\xb8\x04\x00\x00\x02\xbf\x01\x00\x00\x00\x52\x68\x2e\x2e\x2e\x0a\x48\xba\x2e\x2e\x2e\x57\x4f\x4f\x44\x59\x52\x48\x8d\x34\x24\xba\x0c\x00\x00\x00\x0f\x05\x48\x31\xd2\x48\xba\x01\x00\x00\x00\x00\x00\x00\x00\x48\x8d\x3d\xba\xbe\xba\xbe\x48\x8d\x35\x38\x00\x00\x00\x48\x31\xc9\x48\x31\xdb\x44\x8a\x0c\x1e\x00\x0c\x0f\x44\x30\x0c\x0f\x48\xff\xc3\x48\xff\xc1\x48\x39\xd1\x74\x08\x80\x3c\x1e\x00\x74\xe1\xeb\xe2\x58\x58\x5a\xE8\xEA\xCF\xFF\xFF\xb8\x01\x00\x00\x02\xbf\x00\x00\x00\x00\x0f\x05";
+unsigned char shellcode[SHELLCODE_LEN] = "\xb8\x04\x00\x00\x02\xbf\x01\x00\x00\x00\x52\x68\x2e\x2e\x2e\x0a\x48\xba\x2e\x2e\x2e\x57\x4f\x4f\x44\x59\x52\x48\x8d\x34\x24\xba\x0c\x00\x00\x00\x0f\x05\x48\x31\xd2\x48\xba\x01\x00\x00\x00\x00\x00\x00\x00\x48\x8d\x3d\xba\xbe\xba\xbe\x48\x8d\x35\x38\x00\x00\x00\x48\x31\xc9\x48\x31\xdb\x44\x8a\x0c\x1e\x00\x0c\x0f\x44\x30\x0c\x0f\x48\xff\xc3\x48\xff\xc1\x48\x39\xd1\x74\x08\x80\x3c\x1e\x00\x74\xe1\xeb\xe2\x58\x58\x5a\xE9\xEA\xCF\xFF\xFF\xb8\x01\x00\x00\x02\xbf\x00\x00\x00\x00\x0f\x05";
 unsigned int pad = 0;
 unsigned long lc_tot_size = 0;
 t_section text_sec;
@@ -56,7 +56,6 @@ void handle_entry(t_mf mf, t_entry_point_command *lcmd)
 
 	ft_memcpy(&epc, lcmd, sizeof(t_entry_point_command));
 	old_entry = epc.entryoff;
-	printf("oldentry=%lu\n", old_entry);
 	epc.entryoff = new_entry;
 	write(mf.wfd, &epc, lcmd->cmdsize);
 }
@@ -66,12 +65,17 @@ void handle_segment(t_mf mf, t_segment_command_64 *lcmd)
 	ft_memcpy(&newseg, lcmd, sizeof(t_segment_command_64));
 	newseg.initprot = VM_PROT_ALL;
 	newseg.maxprot = VM_PROT_ALL;
-	if (!ft_strncmp(newseg.segname, SEG_LINKEDIT,ft_strlen(SEG_LINKEDIT)))
+	if (!ft_strncmp(newseg.segname, SEG_TEXT,ft_strlen(SEG_TEXT))) // MAKES __TEXT WRITABLE
+	{
+		int r = write(mf.wfd, &newseg, sizeof(t_segment_command_64));
+		write(mf.wfd, ((unsigned char *)lcmd) + sizeof(t_segment_command_64), lcmd->cmdsize - r);
+	}
+	else if (!ft_strncmp(newseg.segname, SEG_LINKEDIT,ft_strlen(SEG_LINKEDIT)))
 	{
 		pad = newseg.vmsize - newseg.filesize;
 		newseg.vmsize += SHELLCODE_LEN + ft_strlen(mf.key);
 		newseg.filesize = newseg.vmsize;
-		write(mf.wfd, &newseg, sizeof(t_segment_command_64));
+		write(mf.wfd, &newseg, sizeof(t_segment_command_64)); //GIVE ALL PERMS AND UPDATE SIZE
 	}
 	else
 		write(mf.wfd,(unsigned char*)lcmd, lcmd->cmdsize);
@@ -121,7 +125,6 @@ int parse64machloadcmd(t_mf mf)
 		ptr += lcmd.cmdsize;
 		i++;
 	}
-	printf("entry=%lu\n", new_entry);
 	ptr = (unsigned char *)mf.file  + sizeof(t_mach_header_64); 
 	i = 0;
 	while (i < mf.mach64header.ncmds)
@@ -203,46 +206,12 @@ int hack(t_mf mf)
 	update_shellcode_reladdr(JMP_INDEX - 1, JMP_INDEX, 0);
 	update_shellcode_reladdr(DECREL_INDEX, DECREL_DATA_INDEX, 1);
 	update_shellcode_value(STRSIZE_INDEX, text_sec.size);
-	printf("sizetext=%llu\n", text_sec.size);
 	char *new_sc = update_shellcode_key(mf.key);
 	write(mf.wfd, new_sc, SHELLCODE_LEN + ft_strlen(mf.key)); // injecting our shellcode
-//	write(mf.wfd, (unsigned char *)mf.file + new_entry, mf.fsize - new_entry);  
 	free(new_sc);
 	return (0);
 }
-/*
-int parse64elfsec(t_mf mf)
-{
-	Elf64_Off new_sect = get_section(mf, ".bss").sh_offset;
-	Elf64_Shdr text_sec = get_section(mf, ".text");
-	unsigned long start =  mf.elf64header.e_phoff + (sizeof(Elf64_Phdr) * mf.elf64header.e_phnum); 
-	unsigned long new_start;
-	char *enc_text;
 
-	if (!(enc_text = malloc(text_sec.sh_size)))
-		return (1);
-	ft_memcpy(enc_text, (unsigned char *)mf.file + text_sec.sh_offset, text_sec.sh_size);
-	_encrypt(enc_text, mf.key, text_sec.sh_size);//encrypt the whole .text section
-
-	write(mf.wfd, (unsigned char *)mf.file + start, (text_sec.sh_offset - start)); //writing from PH till start of .text
-	write(mf.wfd, enc_text, text_sec.sh_size); // writing .text section
-	free(enc_text);
-	new_start = start + (text_sec.sh_offset - start) + text_sec.sh_size;
-	write(mf.wfd, (unsigned char *)mf.file + new_start, (new_sect - new_start));// writing stuff between .text and .bss
-	for (unsigned int i = 0; i < pad; i++)
-		write(mf.wfd, "\x00", 1); // padding 00 for what were previously "virtual memory"
-
-	update_shellcode_reladdr(JMP_INDEX - 1, JMP_INDEX, 0);
-	update_shellcode_reladdr(DECREL_INDEX, DECREL_DATA_INDEX, 1);
-	update_shellcode_value(STRSIZE_INDEX, text_sec.sh_size);
-
-	char *new_sc = update_shellcode_key(mf.key);
-	write(mf.wfd, new_sc, SHELLCODE_LEN + ft_strlen(mf.key)); // injecting our shellcode
-//	write(mf.wfd, (unsigned char *)mf.file + new_sect, mf.fsize - new_sect); // remove for binary compression, it just adds the shdrs 
-	free(new_sc);
-	return (0);	
-}
-*/
 int parse64macho(t_mf mf)
 {
 	//if (is_stripped(mf))
@@ -252,6 +221,5 @@ int parse64macho(t_mf mf)
 	parse64machloadcmd(mf);
 	if (hack(mf))
 		return (1);
-	printf("pad=%u\n", pad);
 	return (0);
 }
