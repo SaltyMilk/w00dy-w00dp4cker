@@ -39,8 +39,8 @@ int parse_magic(t_elf_file ef)
 	}
 	if (ef.elf32header.e_ident[EI_CLASS] == ELFCLASS32)
 	{
-//		if (parse32elf(ef))
-		//	ft_printf("woody_woodpacker: File corrupted\n");
+		if (parse32elf(ef))
+			ft_printf("woody_woodpacker: File corrupted\n");
 	}
 	else if (ef.elf32header.e_ident[EI_CLASS] == ELFCLASS64)
 	{

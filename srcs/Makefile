@@ -13,7 +13,7 @@
 UNAME := $(shell uname)
 
 ifeq ($(UNAME), Linux)
-SRC = woody.c utils.c elf64.c
+SRC = woody.c utils.c elf64.c elf32.c
 endif
 ifeq ($(UNAME), Darwin)
 SRC = macho_woody.c utils.c mach64.c

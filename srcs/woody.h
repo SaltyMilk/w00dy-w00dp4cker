@@ -26,6 +26,7 @@ typedef struct s_elf_file
 
 //elf64
 int parse64elf(t_elf_file ef);
+int parse32elf(t_elf_file ef);
 //Utils
 unsigned int sp_len(char **sp);
 void free_sp(char **sp);
