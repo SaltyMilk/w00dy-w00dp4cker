@@ -10,7 +10,7 @@ _decryptSelmelc:
 	add eax, 0x44434241
 	mov esi, eax
 	sub eax, 0x44434241
-	add eax, 0x44434241
+	add eax, 0x45444342
 	mov edi, eax
 	lea edi, [rel $-0x48474645]
 	lea esi, [rel $+51]

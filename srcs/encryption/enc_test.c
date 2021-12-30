@@ -7,7 +7,7 @@ extern void decryptSelmelc(char *s, char *key, unsigned long);
 
 int main()
 {
-	char s[] = "\x55\x48\x89\xe5";
+	char s[] = "\x31\xed\x5e\x89";
 	char k[] = "mdr";
 
 	for (int i = 0; i < sizeof(s); i++)
