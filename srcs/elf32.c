@@ -1,11 +1,11 @@
 #include "woody.h"
 //					 print decrypt call/jmp
-#define SHELLCODE_LEN 49 + 46      + 5
-#define JMP_INDEX 87 
-#define DECREL_INDEX 43
-#define DECREL_DATA_INDEX 45
+#define SHELLCODE_LEN 49 + 59      + 5 + 13
+#define JMP_INDEX 100 
+#define DECREL_DATA_INDEX 62
 #define STRSIZE_INDEX 39
-unsigned char shellcode32[SHELLCODE_LEN] = "\xb8\x04\x00\x00\x00\xbb\x01\x00\x00\x00\x52\x68\x2e\x2e\x2e\x0a\x68\x4f\x4f\x44\x59\x68\x2e\x2e\x2e\x57\x8d\x0c\x24\xba\x0c\x00\x00\x00\xcd\x80\x31\xd2\xba\x41\x42\x43\x44\x8d\x3d\xc2\xb9\xb8\xb7\x8d\x35\x40\x00\x00\x00\x31\xc9\x31\xdb\x8a\x04\x1e\x00\x0c\x0f\x30\x04\x0f\x43\x41\x39\xd1\x74\x08\x80\x3c\x1e\x00\x74\xe9\xeb\xe9\x58\x58\x58\x5a\xe8\xBA\xBE\xBA\xBE\x31\xdb\xb8\x01\x00\x00\x00\xcd\x80";
+#define RELCALL_INDEX 43 
+unsigned char shellcode32[SHELLCODE_LEN] = "\xb8\x04\x00\x00\x00\xbb\x01\x00\x00\x00\x52\x68\x2e\x2e\x2e\x0a\x68\x4f\x4f\x44\x59\x68\x2e\x2e\x2e\x57\x8d\x0c\x24\xba\x0c\x00\x00\x00\xcd\x80\x31\xd2\xba\x41\x42\x43\x44\xe8\x00\x00\x00\x00\x58\x05\x46\x00\x00\x00\x89\xc6\x2d\x46\x00\x00\x00\x05\x41\x42\x43\x44\x89\xc7\x31\xc9\x31\xdb\x8a\x04\x1e\x00\x0c\x0f\x30\x04\x0f\x43\x41\x39\xd1\x74\x08\x80\x3c\x1e\x00\x74\xe9\xeb\xe9\x58\x58\x58\x5a\xe8\xBA\xBE\xBA\xBE\x31\xdb\xb8\x01\x00\x00\x00\xcd\x80\x41\x42\x43\x44\x45\x46\x47\x48\x49\x50\x51\x52\x53";
 unsigned int pad32 = 0;
 unsigned long jmp_addr32 = 0;
 unsigned long old_entry32 = 0;
@@ -92,7 +92,7 @@ int parse32elfheader(t_elf_file ef)
 /*	new_header.e_shnum = 0;
 	new_header.e_shentsize = 0;
 	new_header.e_shoff = 0;*/
-	new_header.e_shoff = new_header.e_shoff + ft_strlen(ef.key) + SHELLCODE_LEN + pad32;
+	new_header.e_shoff = new_header.e_shoff + ft_strlen(ef.key) + 1 + SHELLCODE_LEN + pad32;
 	old_entry32 = new_header.e_entry;
 	if (!(new_header.e_entry = new_entryaddr32(ef)))
 		return (1);
@@ -136,13 +136,14 @@ void update_shellcode32_reladdr(unsigned int op_index, unsigned int dat_index, i
 	rel_jmp = -(new_entry32 + op_index - old_entry32);  
 	char *s = (char *)&rel_jmp;
 	int j = dat_index;
+	(void) mod;
 	for(int i = 0; i < 4; i++)
 	{
 		char c = (char)s[i];
-		if (i == 0 && mod)
+	/*	if (i == 0 && mod)
 			c -= 7;
-		else if (i == 0)
-			c -= 5;
+		else */if (i == 0 && !mod)
+					c -= 5;
 		shellcode32[j] = c;
 		j++;
 	}
@@ -185,13 +186,14 @@ int parse32elfsec(t_elf_file ef)
 	write(ef.wfd, (unsigned char *)ef.file + new_start, (new_sect - new_start));// writing stuff between .text and .bss
 	for (unsigned int i = 0; i < pad32; i++)
 		write(ef.wfd, "\x00", 1); // padding 00 for what were previously "virtual memory"
-
+	printf("textsize=%u\n", text_sec.sh_size);
 	update_shellcode32_reladdr(JMP_INDEX - 1, JMP_INDEX, 0);
-	update_shellcode32_reladdr(DECREL_INDEX, DECREL_DATA_INDEX, 1);
+//	update_shellcode32_reladdr(DECREL_INDEX, DECREL_DATA_INDEX, 1);
+	update_shellcode32_reladdr(RELCALL_INDEX, DECREL_DATA_INDEX, 1);
 	update_shellcode32_value(STRSIZE_INDEX, text_sec.sh_size);
 
 	char *new_sc = update_shellcode32_key(ef.key);
-	write(ef.wfd, new_sc, SHELLCODE_LEN + ft_strlen(ef.key)); // injecting our shellcode
+	write(ef.wfd, new_sc, SHELLCODE_LEN + ft_strlen(ef.key) + 1); // injecting our shellcode
 	write(ef.wfd, (unsigned char *)ef.file + new_sect + 4, ef.fsize - new_sect); // remove for binary compression, it just adds the shdrs 
 	free(new_sc);
 	return (0);	

@@ -5,8 +5,15 @@ global _decryptSelmelc
 _decryptSelmelc:
 	xor edx, edx
 	mov edx, 0x44434241
+	call $ + 5
+	pop eax
+	add eax, 0x44434241
+	mov esi, eax
+	sub eax, 0x44434241
+	add eax, 0x44434241
+	mov edi, eax
 	lea edi, [rel $-0x48474645]
-	lea esi, cs:[+51]
+	lea esi, [rel $+51]
 	xor ecx, ecx
 	reset:
 		xor ebx, ebx
