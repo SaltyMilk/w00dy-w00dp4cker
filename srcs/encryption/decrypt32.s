@@ -6,7 +6,7 @@ _decryptSelmelc:
 	xor edx, edx
 	mov edx, 0x44434241
 	lea edi, [rel $-0x48474645]
-	lea esi, [rel $+51]
+	lea esi, cs:[+51]
 	xor ecx, ecx
 	reset:
 		xor ebx, ebx

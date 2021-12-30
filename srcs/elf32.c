@@ -89,10 +89,10 @@ int parse32elfheader(t_elf_file ef)
 	Elf32_Ehdr new_header;
 
 	ft_memcpy(&new_header, &ef.elf32header, sizeof(Elf32_Ehdr));
-//	new_header.e_shnum = 0;
-//	new_header.e_shentsize = 0;
-//	new_header.e_shoff = 0;
-	new_header.e_shoff = new_header.e_shoff + SHELLCODE_LEN + pad32;
+/*	new_header.e_shnum = 0;
+	new_header.e_shentsize = 0;
+	new_header.e_shoff = 0;*/
+	new_header.e_shoff = new_header.e_shoff + ft_strlen(ef.key) + SHELLCODE_LEN + pad32;
 	old_entry32 = new_header.e_entry;
 	if (!(new_header.e_entry = new_entryaddr32(ef)))
 		return (1);
@@ -115,6 +115,8 @@ int parse32elfph(t_elf_file ef)
 		{
 			if (phdr.p_flags == (PF_R | PF_W))//Segment containning bss and my new section
 			{
+				printf("size=%u\n", phdr.p_memsz);
+				printf("size=%u\n", phdr.p_filesz);
 				pad32 = phdr.p_memsz - phdr.p_filesz;
 				phdr.p_memsz += SHELLCODE_LEN + ft_strlen(ef.key);
 				phdr.p_filesz = phdr.p_memsz;
@@ -189,8 +191,8 @@ int parse32elfsec(t_elf_file ef)
 	update_shellcode32_value(STRSIZE_INDEX, text_sec.sh_size);
 
 	char *new_sc = update_shellcode32_key(ef.key);
-	write(ef.wfd, new_sc, SHELLCODE_LEN); //+ ft_strlen(ef.key)); // injecting our shellcode
-	write(ef.wfd, (unsigned char *)ef.file + new_sect, ef.fsize - new_sect); // remove for binary compression, it just adds the shdrs 
+	write(ef.wfd, new_sc, SHELLCODE_LEN + ft_strlen(ef.key)); // injecting our shellcode
+	write(ef.wfd, (unsigned char *)ef.file + new_sect + 4, ef.fsize - new_sect); // remove for binary compression, it just adds the shdrs 
 	free(new_sc);
 	return (0);	
 }
