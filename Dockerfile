@@ -21,7 +21,7 @@ RUN echo "deb mirror://mirrors.ubuntu.com/mirrors.txt precise main restricted un
 	echo "deb mirror://mirrors.ubuntu.com/mirrors.txt precise-updates main restricted universe multiverse">>etc/apt/sourcs.list;\
 	echo "deb mirror://mirrors.ubuntu.com/mirrors.txt precise-backports main restricted universe multiverse">>etc/apt/sourcs.list;\
 	echo "deb mirror://mirrors.ubuntu.com/mirrors.txt precise-security main restricted universe multiverse">>etc/apt/sourcs.list;
-RUN rm /etc/dpkg/dpkg.cfg.d/multiarch\
+RUN echo "foreign-architecture i386" >>/etc/dpkg/dpkg.cfg.d/multiarch &&  rm /etc/dpkg/dpkg.cfg.d/multiarch\
 && apt-get install gcc-multilib -y
 # Tools installation
 # Feel free to add tools you need here
