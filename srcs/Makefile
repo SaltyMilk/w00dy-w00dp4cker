@@ -29,7 +29,7 @@ all : $(NAME)
 
 $(NAME) : $(OBJ) encryption/encrypt.o
 	make -C libft
-	$(CC) -fsanitize=address -o $(NAME) $(OBJ)  encryption/encrypt.o libft/libft.a
+	$(CC) -o $(NAME) $(OBJ)  encryption/encrypt.o libft/libft.a
 
 
 ifeq ($(UNAME), Linux)
