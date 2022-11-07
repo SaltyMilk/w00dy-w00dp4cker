@@ -1,4 +1,4 @@
-# woody-woodpacker
+# w00dy-w00dp4cker
 ELF/Mach-O Executable patcher. Injects arbitrary code and encrypts the base code then decrypts it at runtime.
 
 Currently supports : ELF 64bits, ELF 32bits, Mach-O 64bits
